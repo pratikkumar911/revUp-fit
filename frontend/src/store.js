@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
   createUserWithEmailAndPassword,
   EmailAuthProvider,
@@ -104,57 +104,87 @@ export function AppProvider({ children }) {
   const [me, setMe] = useState(null);
   const [ready, setReady] = useState(!isFirebaseConfigured);
   const [error, setError] = useState('');
+  const accountLoads = useRef(new Map());
 
-  const loadAccount = useCallback(async (user) => {
-    const tokenResult = await getIdTokenResult(user);
-    const role = tokenResult.claims.role === 'admin' ? 'admin' : 'user';
-    let profile;
-    try {
-      profile = await request('/me');
-    } catch (e) {
-      if (e.apiCode !== 'NO_PROFILE' || role !== 'user') throw e;
-      await request('/me/init', { method: 'POST', body: { name: user.displayName || user.email?.split('@')[0] || 'User' } });
-      profile = await request('/me');
-    }
+  const loadAccount = useCallback((user) => {
+    const activeLoad = accountLoads.current.get(user.uid);
+    if (activeLoad) return activeLoad;
 
-    const currentUser = normalizeUser({
-      ...profile,
-      email: profile.email || user.email,
-      name: profile.name || user.displayName || user.email?.split('@')[0] || 'User',
-    }, role);
-    let nextDb = emptyDb();
+    const load = (async () => {
+      const tokenResult = await getIdTokenResult(user);
+      const role = tokenResult.claims.role === 'admin' ? 'admin' : 'user';
+      let profile;
+      try {
+        profile = await request('/me');
+      } catch (e) {
+        if (e.apiCode !== 'NO_PROFILE' || role !== 'user') throw e;
+        await request('/me/init', { method: 'POST', body: { name: user.displayName || user.email?.split('@')[0] || 'User' } });
+        profile = await request('/me');
+      }
 
-    if (role === 'admin') {
-      const [users, plans, templates, queries] = await Promise.all([
-        request('/admin/users?filter=all'),
-        request('/admin/plans'),
-        request('/admin/templates'),
-        request('/admin/queries'),
-      ]);
-      nextDb = {
-        users: users.map((u) => normalizeUser(u, 'user')),
-        plans: plans.map(normalizePlan),
-        templates: templates.map((t) => ({ ...t, durationDays: t.durationDays || t.days.length })),
-        queries: queries.map((q) => normalizeQuery(q, false)),
-        notifications: [],
-      };
-    } else {
-      const [planResult, queries, notifications] = await Promise.all([
-        request(`/me/plan?date=${today()}`),
-        request('/queries'),
-        request('/me/notifications'),
-      ]);
-      nextDb = {
-        ...nextDb,
+      const currentUser = normalizeUser({
+        ...profile,
+        email: profile.email || user.email,
+        name: profile.name || user.displayName || user.email?.split('@')[0] || 'User',
+      }, role);
+      setMe(currentUser);
+      setDb(emptyDb());
+      setError('');
+
+      if (role === 'admin') {
+        const users = await request('/admin/users?filter=all');
+        if (auth?.currentUser?.uid !== user.uid) return;
+        setDb((current) => ({ ...current, users: users.map((u) => normalizeUser(u, 'user')) }));
+
+        Promise.all([
+          request('/admin/plans'),
+          request('/admin/templates'),
+          request('/admin/queries'),
+        ]).then(([plans, templates, queries]) => {
+          if (auth?.currentUser?.uid !== user.uid) return;
+          setDb((current) => ({
+            ...current,
+            plans: plans.map(normalizePlan),
+            templates: templates.map((t) => ({ ...t, durationDays: t.durationDays || t.days.length })),
+            queries: queries.map((q) => normalizeQuery(q, false)),
+          }));
+        }).catch((loadError) => {
+          console.error('Could not load admin data:', loadError);
+        });
+        return;
+      }
+
+      const planResult = await request(`/me/plan?date=${today()}`);
+      if (auth?.currentUser?.uid !== user.uid) return;
+      setDb((current) => ({
+        ...current,
         plans: planResult.plan ? [normalizePlan(planResult.plan)] : [],
-        queries: queries.map((q) => normalizeQuery(q)),
-        notifications: notifications.map((n) => ({ ...n, at: timestamp(n.createdAt) })),
-      };
-    }
+      }));
 
-    setMe(currentUser);
-    setDb(nextDb);
-    setError('');
+      Promise.all([request('/queries'), request('/me/notifications')])
+        .then(([queries, notifications]) => {
+          if (auth?.currentUser?.uid !== user.uid) return;
+          setDb((current) => ({
+            ...current,
+            queries: queries.map((q) => normalizeQuery(q)),
+            notifications: notifications.map((n) => ({ ...n, at: timestamp(n.createdAt) })),
+          }));
+        })
+        .catch((loadError) => {
+          console.error('Could not load messages and notifications:', loadError);
+        });
+    })();
+
+    accountLoads.current.set(user.uid, load);
+    load.then(
+      () => {
+        if (accountLoads.current.get(user.uid) === load) accountLoads.current.delete(user.uid);
+      },
+      () => {
+        if (accountLoads.current.get(user.uid) === load) accountLoads.current.delete(user.uid);
+      },
+    );
+    return load;
   }, []);
 
   const refresh = useCallback(async () => {
