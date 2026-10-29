@@ -1,0 +1,286 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #202b25;
+  background: #f7f8f6;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
+  font-weight: 400;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid #9bc7ad;
+  outline-offset: 2px;
+}
+
+.page {
+  display: grid;
+  min-height: 100vh;
+  padding: 28px 16px;
+  place-items: center;
+}
+
+.card {
+  width: min(100%, 440px);
+  padding: 32px;
+  border: 1px solid #e8ebe7;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 16px 48px rgb(34 54 41 / 6%);
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: #397454;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(1.7rem, 8vw, 2rem);
+  letter-spacing: -0.045em;
+  line-height: 1.15;
+}
+
+.intro {
+  margin: 12px 0 22px;
+  color: #657168;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.notice {
+  margin: 0 0 22px;
+  padding: 15px 16px;
+  border: 1px solid #f0dfd9;
+  border-radius: 12px;
+  background: #fff8f5;
+  color: #653d32;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.notice strong {
+  color: #8b3f2d;
+}
+
+.notice p {
+  margin: 5px 0 0;
+}
+
+.form {
+  display: grid;
+  gap: 10px;
+}
+
+.form > label:not(.checkbox-row) {
+  margin-top: 4px;
+  color: #35433a;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.form input:not([type="checkbox"]) {
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 13px;
+  border: 1px solid #dfe4df;
+  border-radius: 10px;
+  background: #fff;
+  color: #202b25;
+}
+
+.form input:not([type="checkbox"]):focus {
+  border-color: #58916d;
+  outline: 3px solid #e0efe5;
+}
+
+.primary,
+.danger {
+  min-height: 48px;
+  margin-top: 8px;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 650;
+  transition: background-color 120ms ease, opacity 120ms ease;
+}
+
+.primary {
+  background: #2c6847;
+}
+
+.primary:hover:not(:disabled) {
+  background: #24583b;
+}
+
+.danger {
+  background: #a83f35;
+}
+
+.danger:hover:not(:disabled) {
+  background: #91352d;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.text-button {
+  justify-self: center;
+  min-height: 40px;
+  padding: 6px 8px;
+  border: 0;
+  background: transparent;
+  color: #316a49;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.text-button:hover {
+  text-decoration: underline;
+}
+
+.helper,
+.reset-instructions {
+  margin: 0 0 4px;
+  color: #657168;
+  font-size: 0.91rem;
+  line-height: 1.5;
+}
+
+.reset-instructions {
+  padding: 13px;
+  border-radius: 10px;
+  background: #f1f7f2;
+  color: #365341;
+}
+
+.signed-in {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 5px;
+  padding: 13px;
+  border-radius: 10px;
+  background: #f4f7f4;
+  font-size: 0.88rem;
+}
+
+.signed-in > span {
+  color: #657168;
+}
+
+.signed-in > strong {
+  overflow-wrap: anywhere;
+}
+
+.signed-in .text-button {
+  justify-self: start;
+  min-height: 32px;
+  padding-left: 0;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 8px 0 2px;
+  color: #526057;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.checkbox-row input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  margin: 1px 0 0;
+  accent-color: #2c6847;
+}
+
+.message {
+  margin: 0 0 16px;
+  padding: 11px 13px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.error {
+  background: #fff0ee;
+  color: #8a3028;
+}
+
+.success {
+  background: #eef7f0;
+  color: #2c6847;
+}
+
+footer {
+  margin-top: 25px;
+  padding-top: 18px;
+  border-top: 1px solid #edf0ed;
+  color: #748077;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+footer strong {
+  color: #506257;
+  font-weight: 600;
+}
+
+.success-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 20px;
+  border-radius: 50%;
+  background: #e8f4eb;
+  color: #2c6847;
+  font-size: 1.5rem;
+  place-items: center;
+}
+
+.loading {
+  color: #657168;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .page {
+    padding: 16px;
+  }
+
+  .card {
+    padding: 25px 21px;
+    border-radius: 16px;
+  }
+}

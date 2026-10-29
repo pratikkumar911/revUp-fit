@@ -8,7 +8,17 @@ const { errorHandler } = require('./middleware');
 
 const app = express();
 app.use(helmet());
-app.use(cors());
+const webOrigins = new Set(
+  (process.env.WEB_ORIGINS || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+);
+app.use(cors({
+  origin(origin, callback) {
+    callback(null, !origin || webOrigins.has(origin));
+  },
+}));
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '100kb' }));
 app.use(rateLimit({ windowMs: 60_000, limit: 120 }));

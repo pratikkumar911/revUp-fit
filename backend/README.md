@@ -18,6 +18,11 @@ Firestore rules deny direct client access. No payments, no access periods.
 3. Register a Firebase **Web app** in the same project and copy its public configuration into the `EXPO_PUBLIC_FIREBASE_*` variables. These are client configuration values, not service-account credentials.
 4. Run `npm install` and `npm start` from `frontend/`.
 
+## Web account deletion
+- Set the Render environment variable `WEB_ORIGINS` to the exact origin(s) of the deletion website, comma-separated (for example, `https://example.com,https://www.example.com`). Do not include URL paths or trailing slashes. Requests without an `Origin` header, such as native app requests, remain allowed; browser requests from other origins are blocked by CORS.
+- The deletion website can use Firebase Authentication's Web SDK to sign users in, offer password reset, and then call `DELETE /me` on this API with `Authorization: Bearer <Firebase ID token>`. The endpoint already requires a recently authenticated user (within five minutes) and deletes the user's profile, assigned plans, chats/messages, notifications, and Firebase Auth account.
+- If the endpoint returns `REAUTH_REQUIRED`, have the user sign in again before confirming deletion. Do not send a deletion request based only on an email address.
+
 ## Flow
 - App signs in with Firebase Auth and sends `Authorization: Bearer <ID token>`.
 - `POST /me/init` -> `POST /me/consent` -> `PUT /me` (profile, 18+). Completing the profile puts the user in the dietitian's queue.
