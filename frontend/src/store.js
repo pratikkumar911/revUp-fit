@@ -104,7 +104,39 @@ export function AppProvider({ children }) {
   const [me, setMe] = useState(null);
   const [ready, setReady] = useState(!isFirebaseConfigured);
   const [error, setError] = useState('');
+  const [planLoading, setPlanLoading] = useState(false);
+  const [planError, setPlanError] = useState('');
   const accountLoads = useRef(new Map());
+  const planLoads = useRef(new Map());
+
+  const loadPlan = useCallback((user) => {
+    const activeLoad = planLoads.current.get(user.uid);
+    if (activeLoad) return activeLoad;
+    if (auth?.currentUser?.uid !== user.uid) return Promise.resolve();
+
+    setPlanLoading(true);
+    setPlanError('');
+    const load = request(`/me/plan?date=${today()}`)
+      .then((planResult) => {
+        if (auth?.currentUser?.uid !== user.uid) return;
+        setDb((current) => ({
+          ...current,
+          plans: planResult.plan ? [normalizePlan(planResult.plan)] : [],
+        }));
+      })
+      .catch((loadError) => {
+        if (auth?.currentUser?.uid !== user.uid) return;
+        setPlanError(loadError.message || 'Could not load your diet plan.');
+        console.error('Could not load diet plan:', loadError);
+      })
+      .finally(() => {
+        if (auth?.currentUser?.uid === user.uid) setPlanLoading(false);
+        if (planLoads.current.get(user.uid) === load) planLoads.current.delete(user.uid);
+      });
+
+    planLoads.current.set(user.uid, load);
+    return load;
+  }, []);
 
   const loadAccount = useCallback((user) => {
     const activeLoad = accountLoads.current.get(user.uid);
@@ -130,6 +162,7 @@ export function AppProvider({ children }) {
       setMe(currentUser);
       setDb(emptyDb());
       setError('');
+      setReady(true);
 
       if (role === 'admin') {
         const users = await request('/admin/users?filter=all');
@@ -154,12 +187,7 @@ export function AppProvider({ children }) {
         return;
       }
 
-      const planResult = await request(`/me/plan?date=${today()}`);
-      if (auth?.currentUser?.uid !== user.uid) return;
-      setDb((current) => ({
-        ...current,
-        plans: planResult.plan ? [normalizePlan(planResult.plan)] : [],
-      }));
+      loadPlan(user);
 
       Promise.all([request('/queries'), request('/me/notifications')])
         .then(([queries, notifications]) => {
@@ -185,14 +213,20 @@ export function AppProvider({ children }) {
       },
     );
     return load;
-  }, []);
+  }, [loadPlan]);
 
   const refresh = useCallback(async () => {
     const user = auth?.currentUser;
     if (!user) return;
     setError('');
     await loadAccount(user);
-  }, [loadAccount]);
+    if (me?.role !== 'admin') await loadPlan(user);
+  }, [loadAccount, loadPlan, me?.role]);
+
+  const retryPlan = useCallback(() => {
+    const user = auth?.currentUser;
+    return user ? loadPlan(user) : Promise.resolve();
+  }, [loadPlan]);
 
   const loadQuery = useCallback(async (id) => {
     const query = await request(`/admin/queries/${encodeURIComponent(id)}`);
@@ -208,6 +242,8 @@ export function AppProvider({ children }) {
     if (!isFirebaseConfigured || !auth) return undefined;
     return onAuthStateChanged(auth, (user) => {
       setReady(false);
+      setPlanLoading(false);
+      setPlanError('');
       if (!user) {
         setMe(null);
         setDb(emptyDb());
@@ -225,7 +261,7 @@ export function AppProvider({ children }) {
   }, [loadAccount]);
 
   const actions = {
-    ready, me, db, error, refresh,
+    ready, me, db, error, planLoading, planError, refresh, retryPlan,
     signIn: async (email, password) => {
       try {
         const result = await signInWithEmailAndPassword(requireAuth(), email.trim(), password);

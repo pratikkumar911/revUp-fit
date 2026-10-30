@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Image } from 'react-native';
 import { Screen, Header, Field, Btn } from '../../components/ui';
 import BrandFooter from '../../components/BrandFooter';
 import { useApp } from '../../store';
@@ -28,6 +29,12 @@ export default function SignUpScreen({ navigation }) {
   return (
     <Screen scroll footer={<BrandFooter />}>
       <Header title="Sign up" onBack={() => navigation.goBack()} />
+      <Image
+        source={require('../../../assets/revup-fit-logo.png')}
+        accessibilityLabel="RevUp Fit"
+        resizeMode="contain"
+        style={{ width: 240, height: 68, alignSelf: 'center', marginTop: 16 }}
+      />
       <Field label="Name" value={f.name} onChangeText={set('name')} autoCapitalize="words" error={err.name} />
       <Field label="Email" value={f.email} onChangeText={set('email')} keyboardType="email-address" error={err.email} />
       <Field label="Password" value={f.pw} onChangeText={set('pw')} secureTextEntry error={err.pw} />

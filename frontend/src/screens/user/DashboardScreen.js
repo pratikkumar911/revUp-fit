@@ -1,7 +1,7 @@
 import React from 'react';
-import { Alert, View, Pressable } from 'react-native';
+import { ActivityIndicator, Alert, View, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Screen, Muted, Card, Avatar, HeadingText, Text } from '../../components/ui';
+import { Screen, Muted, Card, Avatar, HeadingText, Text, Btn } from '../../components/ui';
 import MealView from '../../components/MealView';
 import { useApp } from '../../store';
 import { C } from '../../theme';
@@ -15,7 +15,7 @@ const Icon = ({ name, label, onPress, dot }) => (
 );
 
 export default function DashboardScreen({ navigation }) {
-  const { me, db, toggleDone, refresh } = useApp();
+  const { me, db, toggleDone, refresh, planLoading, planError, retryPlan } = useApp();
   const plan = planOf(db, me);
   const hasNotes = db.notifications.some((n) => n.userId === me.id);
   const toggle = async (key) => {
@@ -36,7 +36,18 @@ export default function DashboardScreen({ navigation }) {
           <Icon name="notifications-outline" label="Notifications" onPress={() => navigation.navigate('Notifications')} dot={hasNotes} />
           <Avatar name={me.name} onPress={() => navigation.navigate('Profile')} />
         </View>
-        {plan ? (
+        {planLoading ? (
+          <Card style={{ alignItems: 'center', paddingVertical: 24 }}>
+            <ActivityIndicator color={C.green} />
+            <Muted>Loading your diet plan…</Muted>
+          </Card>
+        ) : planError ? (
+          <Card>
+            <HeadingText style={{ fontSize: 18, fontWeight: '700', color: C.ink }}>Could not load your diet plan</HeadingText>
+            <Muted>{planError}</Muted>
+            <Btn title="Try again" onPress={retryPlan} />
+          </Card>
+        ) : plan ? (
           <MealView plan={plan} onToggle={toggle} showNutrition />
         ) : (
           <Card>
