@@ -38,6 +38,7 @@ Device tokens are saved with `POST /me/fcm-token` and removed on logout with `PO
 
 ## Things to know
 - Templates store 1 to 7 repeating meal-pattern days and may specify a separate `durationDays` value (1 to 365).
+- A day may include optional per-meal `nutrition` values for `calories`, `protein`, `carbs`, `fat`, and `fiber`. These are non-negative numbers; unset values are omitted. Snack nutrition is nested as `nutrition.snack.pre` or `nutrition.snack.post`. Assigned plans copy this data from the template, and editing an assigned plan updates only that user's copy.
 - Dates are `YYYY-MM-DD`, treated as UTC midnight.
 - `DELETE /me` needs a login within the last 5 minutes (client re-enters the password first). It erases the profile, plans, chats and notifications, then the login.
 - Host somewhere that does not sleep. Use HTTPS. Keep the service account in an environment variable or secret store.

@@ -165,7 +165,6 @@ export default function App() {
 
   return (
     <Page>
-      <p className="eyebrow">RevUp Fit</p>
       <h1>Delete your account</h1>
       <p className="intro">
         Sign in to securely request permanent deletion of your account and its data.
@@ -296,7 +295,6 @@ export default function App() {
 function ConfigNotice() {
   return (
     <>
-      <p className="eyebrow">RevUp Fit</p>
       <h1>Account deletion</h1>
       <p className="intro">The deletion service is not configured yet.</p>
       <div className="notice">
@@ -313,7 +311,10 @@ function ConfigNotice() {
 function Page({ children }) {
   return (
     <main className="page">
-      <article className="card">{children}</article>
+      <article className="card">
+        <img className="brand-logo" src="/revup-fit-logo.svg" alt="RevUp Fit" />
+        {children}
+      </article>
     </main>
   );
 }

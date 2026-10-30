@@ -51,6 +51,13 @@ input:focus-visible {
   box-shadow: 0 16px 48px rgb(34 54 41 / 6%);
 }
 
+.brand-logo {
+  display: block;
+  width: min(100%, 220px);
+  height: auto;
+  margin: 0 0 24px;
+}
+
 .eyebrow {
   margin: 0 0 10px;
   color: #397454;

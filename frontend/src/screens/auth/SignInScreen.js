@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Image, Pressable } from 'react-native';
 import { Screen, H1, Muted, Field, Btn, Text } from '../../components/ui';
 import BrandFooter from '../../components/BrandFooter';
 import { useApp } from '../../store';
@@ -24,8 +24,13 @@ export default function SignInScreen({ navigation }) {
   };
   return (
     <Screen scroll footer={<BrandFooter />}>
-      <View style={{ height: 40 }} />
-      <H1>RevUp Fit</H1>
+      <Image
+        source={require('../../../assets/revup-fit-logo.png')}
+        accessibilityLabel="RevUp Fit"
+        resizeMode="contain"
+        style={{ width: 240, height: 68, alignSelf: 'center', marginTop: 16 }}
+      />
+      <H1>Welcome back</H1>
       <Muted>Sign in to continue</Muted>
       <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoComplete="email" />
       <Field label="Password" value={pw} onChangeText={setPw} secureTextEntry error={err} />

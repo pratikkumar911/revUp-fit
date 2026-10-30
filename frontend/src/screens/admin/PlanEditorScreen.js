@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Pressable, Alert } from 'react-native';
 import { Screen, Header, Field, Btn, Card, Muted, Text, HeadingText } from '../../components/ui';
 import ItemModal from '../../components/ItemModal';
-import { emptyDay, groupsOf, setItems } from '../../components/MealView';
+import { emptyDay, groupsOf, NUTRIENTS, nutritionOf, setItems, setNutrition } from '../../components/MealView';
 import { useApp } from '../../store';
 import { C } from '../../theme';
 import { today, addDays, isDateKey, fmt } from '../../utils';
@@ -13,10 +13,21 @@ export default function PlanEditorScreen({ navigation, route }) {
   const { templateId, userId } = route.params || {};
   const userPlan = userId ? db.plans.find((p) => p.userId === userId) : null;
   const src = userPlan || db.templates.find((t) => t.id === templateId) || null;
+  const initialDay = src?.days?.[0] || emptyDay();
   const [name, setName] = useState(src?.name || '');
   const [days, setDays] = useState(() => src?.days?.length ? JSON.parse(JSON.stringify(src.days)) : [emptyDay()]);
   const [duration, setDuration] = useState(String(userPlan?.repeatDays || src?.durationDays || src?.days?.length || 7));
   const [start, setStart] = useState(userPlan?.startDate || today());
+  const [nutritionDrafts, setNutritionDrafts] = useState(() => Object.fromEntries(
+    groupsOf(initialDay).map((group) => [
+      group.meal,
+      Object.fromEntries(NUTRIENTS.map(({ key }) => {
+        const value = nutritionOf(initialDay, group.meal)[key];
+        return [key, value == null ? '' : String(value)];
+      })),
+    ]),
+  ));
+  const [nutritionErrors, setNutritionErrors] = useState({});
   const [modal, setModal] = useState(null); // { meal, title, item? }
   const [saving, setSaving] = useState(false);
 
@@ -30,6 +41,21 @@ export default function PlanEditorScreen({ navigation, route }) {
   };
   const onDelete = () => { upd(modal.meal, (items) => items.filter((x) => x.id !== modal.item.id)); setModal(null); };
 
+  const onNutritionChange = (meal, nutrient, value) => {
+    setNutritionDrafts((current) => ({ ...current, [meal]: { ...current[meal], [nutrient]: value } }));
+    const trimmed = value.trim();
+    const number = Number(trimmed);
+    const error = trimmed && (!Number.isFinite(number) || number < 0)
+      ? 'Enter a finite number greater than or equal to 0, or leave blank.'
+      : '';
+    setNutritionErrors((current) => {
+      const next = { ...current };
+      if (error) next[`${meal}.${nutrient}`] = error;
+      else delete next[`${meal}.${nutrient}`];
+      return next;
+    });
+  };
+
   const durationDays = Number(duration);
   const durationOk = Number.isSafeInteger(durationDays) && durationDays >= 1 && durationDays <= 365;
   const endDate = isDateKey(start) && durationOk ? addDays(start, durationDays - 1) : null;
@@ -41,10 +67,29 @@ export default function PlanEditorScreen({ navigation, route }) {
       if (!isDateKey(start)) return Alert.alert('Check the start date', 'Use the format YYYY-MM-DD.');
       if (!endDateOk) return Alert.alert('Check the plan duration', 'The end date is outside the supported calendar range.');
     }
+    const invalidNutrition = Object.entries(nutritionDrafts).flatMap(([meal, values]) => Object.entries(values)
+      .filter(([, value]) => value.trim() !== '' && (!Number.isFinite(Number(value.trim())) || Number(value.trim()) < 0))
+      .map(([nutrient]) => `${meal}.${nutrient}`));
+    if (invalidNutrition.length) {
+      setNutritionErrors((current) => Object.fromEntries(invalidNutrition.map((key) => [
+        key,
+        'Enter a finite number greater than or equal to 0, or leave blank.',
+      ])));
+      return Alert.alert('Check nutrition values', 'Nutrition values must be finite, non-negative numbers. Leave a field blank to unset it.');
+    }
+    const updatedDays = days.map((day, index) => {
+      if (index !== 0) return day;
+      return Object.entries(nutritionDrafts).reduce((updatedDay, [meal, values]) => {
+        const nutrition = Object.fromEntries(Object.entries(values)
+          .filter(([, value]) => value.trim() !== '')
+          .map(([nutrient, value]) => [nutrient, Number(value.trim())]));
+        return setNutrition(updatedDay, meal, nutrition);
+      }, day);
+    });
     setSaving(true);
     try {
-      if (userPlan) await updateUserPlan(userId, { name: name.trim(), days, startDate: start, repeatDays: durationDays });
-      else await saveTemplate({ id: templateId, name: name.trim(), days, durationDays });
+      if (userPlan) await updateUserPlan(userId, { name: name.trim(), days: updatedDays, startDate: start, repeatDays: durationDays });
+      else await saveTemplate({ id: templateId, name: name.trim(), days: updatedDays, durationDays });
       navigation.goBack();
     } catch (error) {
       Alert.alert('Could not save plan', error.message);
@@ -80,6 +125,20 @@ export default function PlanEditorScreen({ navigation, route }) {
                 <Text style={{ color: C.green }}>Edit</Text>
               </Pressable>
             ))}
+            <View style={{ borderTopWidth: 1, borderTopColor: C.line, paddingTop: 10, gap: 8 }}>
+              <HeadingText style={{ fontWeight: '700', color: C.ink, fontSize: 14 }}>Meal nutrition</HeadingText>
+              <Muted>Optional values for this meal. Leave blank to unset.</Muted>
+              {NUTRIENTS.map(({ key, label, unit }) => (
+                <Field
+                  key={key}
+                  label={`${label} (${unit})`}
+                  value={nutritionDrafts[g.meal]?.[key] ?? ''}
+                  onChangeText={(value) => onNutritionChange(g.meal, key, value)}
+                  keyboardType="decimal-pad"
+                  error={nutritionErrors[`${g.meal}.${key}`]}
+                />
+              ))}
+            </View>
           </Card>
         ))}
       </Screen>

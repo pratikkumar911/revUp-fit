@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="180" viewBox="0 0 640 180" fill="none">
+  <rect x="18" y="26" width="128" height="128" rx="34" fill="#1F5C45"/>
+  <path d="M48 116L78 86L96 104L119 72" stroke="#F6F3EC" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M101 72H119V90" stroke="#F6F3EC" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M77 85C77 68 64 58 48 59C48 76 60 86 77 85Z" fill="#B8D86A"/>
+  <path d="M77 85C77 68 64 58 48 59" stroke="#B8D86A" stroke-width="3" stroke-linecap="round"/>
+  <text x="177" y="106" fill="#1B2A22" font-family="Manrope, DM Sans, Arial, sans-serif" font-size="68" font-weight="800" letter-spacing="-3">RevUp</text>
+  <text x="180" y="139" fill="#1F5C45" font-family="DM Sans, Arial, sans-serif" font-size="21" font-weight="700" letter-spacing="6">FIT</text>
+</svg>

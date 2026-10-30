@@ -66,7 +66,26 @@ router.get('/plans', h(async (_req, res) => {
 
 // ---- Templates ----
 const item = z.object({ id: z.string().max(40), name: z.string().min(1).max(100), quantity: z.string().max(40), calories: z.number().optional(), notes: z.string().max(300).optional(), directions: z.string().max(2000).optional() });
-const day = z.object({ breakfast: z.array(item), lunch: z.array(item), dinner: z.array(item), snack: z.object({ pre: z.array(item), post: z.array(item) }) });
+const nutrition = z.object({
+  calories: z.number().finite().nonnegative(),
+  protein: z.number().finite().nonnegative(),
+  carbs: z.number().finite().nonnegative(),
+  fat: z.number().finite().nonnegative(),
+  fiber: z.number().finite().nonnegative(),
+}).partial();
+const dayNutrition = z.object({
+  breakfast: nutrition.optional(),
+  lunch: nutrition.optional(),
+  dinner: nutrition.optional(),
+  snack: z.object({ pre: nutrition.optional(), post: nutrition.optional() }).partial().optional(),
+}).partial();
+const day = z.object({
+  breakfast: z.array(item),
+  lunch: z.array(item),
+  dinner: z.array(item),
+  snack: z.object({ pre: z.array(item), post: z.array(item) }),
+  nutrition: dayNutrition.optional(),
+});
 const tplSchema = z.object({
   name: z.string().min(1).max(100),
   days: z.array(day).min(1).max(7),

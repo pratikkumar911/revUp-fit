@@ -37,7 +37,7 @@ export default function DashboardScreen({ navigation }) {
           <Avatar name={me.name} onPress={() => navigation.navigate('Profile')} />
         </View>
         {plan ? (
-          <MealView plan={plan} onToggle={toggle} />
+          <MealView plan={plan} onToggle={toggle} showNutrition />
         ) : (
           <Card>
             <HeadingText style={{ fontSize: 18, fontWeight: '700', color: C.ink }}>Your dietitian is preparing your plan</HeadingText>
