@@ -82,8 +82,23 @@ export default function MealView({ plan, readOnly, onToggle, showNutrition = fal
   const st = planState(plan, date);
   const day = st.status === 'active' ? plan.days[st.index] : null;
   const msg = { none: 'No plan yet.', ended: `The plan ended on ${st.endedOn ? fmt(st.endedOn) : ''}.`, upcoming: plan ? `The plan starts on ${fmt(plan.startDate)}.` : '' }[st.status];
-  const nutritionGroups = day
-    ? groupsOf(day).filter((g) => NUTRIENTS.some(({ key }) => g.nutrition[key] != null))
+  const nutritionTotals = day && showNutrition
+    ? NUTRIENTS.reduce((totals, nutrient) => {
+      let total = 0;
+      let consumed = 0;
+      let hasValue = false;
+      groupsOf(day).forEach((group) => {
+        const value = group.nutrition[nutrient.key];
+        if (value == null) return;
+        hasValue = true;
+        total += Number(value);
+        const mealDone = group.items.length > 0
+          && group.items.every((item) => !!plan.done[`${date}|${group.meal}|${item.id}`]);
+        if (mealDone) consumed += Number(value);
+      });
+      if (hasValue) totals.push({ ...nutrient, total, consumed });
+      return totals;
+    }, [])
     : [];
   return (
     <View style={{ gap: 12 }}>
@@ -109,36 +124,28 @@ export default function MealView({ plan, readOnly, onToggle, showNutrition = fal
         </View>
       )) : <Card><Muted>{msg}</Muted></Card>}
       {day && !readOnly ? <Muted>Tap and hold a food item to mark it done.</Muted> : null}
-      {showNutrition && date === today() && nutritionGroups.length ? (
+      {showNutrition && date === today() && nutritionTotals.length ? (
         <Card>
           <HeadingText style={{ fontSize: 18, fontWeight: '700', color: C.ink }}>Today&apos;s Nutrition</HeadingText>
-          {nutritionGroups.map((g) => {
-            const mealDone = g.items.length > 0
-              && g.items.every((item) => !!plan.done[`${date}|${g.meal}|${item.id}`]);
-            return (
-              <View key={g.meal} style={{ gap: 8, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 10 }}>
-                <HeadingText style={{ fontSize: 14, fontWeight: '700', color: C.ink }}>{g.title}</HeadingText>
-                {NUTRIENTS.filter(({ key }) => g.nutrition[key] != null).map(({ key, label, unit }) => {
-                  const total = g.nutrition[key];
-                  const consumed = mealDone ? total : 0;
-                  return (
-                    <View key={key} style={{ minHeight: 28, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <Text style={{ width: 66, color: C.muted, fontSize: 12 }}>{label}</Text>
-                      <View
-                        accessibilityLabel={`${label}: ${consumed} of ${total} ${unit} consumed`}
-                        style={{ height: 8, flex: 1, overflow: 'hidden', borderRadius: 4, backgroundColor: C.line }}
-                      >
-                        <View style={{ width: mealDone ? '100%' : '0%', height: '100%', borderRadius: 4, backgroundColor: C.green }} />
-                      </View>
-                      <Text style={{ width: 96, color: C.ink, fontSize: 12, fontWeight: '600', textAlign: 'right' }}>
-                        {consumed} / {total} {unit}
-                      </Text>
-                    </View>
-                  );
-                })}
+          {nutritionTotals.map(({ key, label, unit, total, consumed }) => (
+            <View key={key} style={{ minHeight: 28, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={{ width: 66, color: C.muted, fontSize: 12 }}>{label}</Text>
+              <View
+                accessibilityLabel={`${label}: ${consumed} of ${total} ${unit} consumed`}
+                style={{ height: 8, flex: 1, overflow: 'hidden', borderRadius: 4, backgroundColor: C.line }}
+              >
+                <View style={{
+                  width: `${total > 0 ? Math.min(consumed / total, 1) * 100 : 0}%`,
+                  height: '100%',
+                  borderRadius: 4,
+                  backgroundColor: C.green,
+                }} />
               </View>
-            );
-          })}
+              <Text style={{ width: 96, color: C.ink, fontSize: 12, fontWeight: '600', textAlign: 'right' }}>
+                {consumed} / {total} {unit}
+              </Text>
+            </View>
+          ))}
         </Card>
       ) : null}
       <Modal visible={!!sel} transparent animationType={sel?.type === 'details' ? 'slide' : 'fade'} onRequestClose={() => setSel(null)}>
